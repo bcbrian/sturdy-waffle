@@ -33,6 +33,7 @@
   bottom: calc(20% - 20px);
   border: 4px solid hsla(270, 50%, 20%, 1);
   border-radius: 10px;
+  /* transition: all 0.1s ease 0s; */
 }
 
 .sturdy-waffle__left-eye,
