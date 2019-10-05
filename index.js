@@ -10,7 +10,7 @@ function getGameContainer() {
 }
 
 function moveSturdyWaffle() {
-  const sturdyWaffleEl = document.getElementById("sturdy-waffle");
+  const sturdyWaffleEl = document.getElementById("sturdy-waffle-container");
   const gameContinerEl = getGameContainer();
   // sturdyWaffleEl.style.left = "0%";
   document.addEventListener("keydown", function(event) {
@@ -48,12 +48,24 @@ function generateStackables() {
   stackableEl.style.width = width;
   stackableEl.style.height = random(20, 200);
   stackableEl.style.backgroundColor = `hsl(${bgColor}, 90%, 90%)`;
-  stackableEl.style.border = `2px solid hsl(${bgColor}, 90%, 40%)`;
+  stackableEl.style.border = `4px solid hsl(${bgColor}, 90%, 40%)`;
   stackableEl.style.borderRadius = `${random(4, 50)}px`;
   stackableEl.style.position = "absolute";
   stackableEl.style.top = 0;
   stackableEl.style.left = `calc(${random(leftPercent, 100)}% - ${width})`;
   gameContinerEl.append(stackableEl);
+}
+
+function getSturdyRange(boundBox, radius) {
+  let xLower = 0;
+  let xUpper = 0;
+  const mid = boundBox.x + boundBox.width / 2;
+  const diff = boundBox.width - 2 * radius;
+
+  xLower = mid - diff / 2;
+  xUpper = mid + diff / 2;
+
+  return [xLower, xUpper];
 }
 
 // Collision check is wrong
@@ -68,24 +80,45 @@ function isCollided(rect1, rect2) {
   }
   return false;
 }
+function isValidCollision(sturdyWaffleBoundingBox, collidedStackables) {
+  const swRange = getSturdyRange(sturdyWaffleBoundingBox, 10);
+  for (let i = 0; i < collidedStackables.length; i++) {
+    const collidedStackable = collidedStackables[i];
+    const csRange = getSturdyRange(
+      collidedStackable.boundingBox,
+      parseInt(collidedStackable.el.style.borderRadius, 10)
+    );
+    if (
+      (csRange[0] > swRange[0] && csRange[1] < swRange[1]) ||
+      (csRange[0] < swRange[0] && csRange[1] > swRange[1])
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
 function moveStackables(sturdyWaffleBoundingBox, stackableEls, cb) {
-  let noCollision = true;
+  let collisions = [];
   stackableEls.forEach(function(stackableEl) {
     const top = parseInt(stackableEl.style.top, 10);
-    console.log("TOP => ", parseInt(stackableEl.style.top, 10));
     stackableEl.style.top = top + 1;
-    if (noCollision) {
-      noCollision = !isCollided(
-        sturdyWaffleBoundingBox,
-        stackableEl.getBoundingClientRect()
-      );
+    const stackableElBoundingBox = stackableEl.getBoundingClientRect();
+    if (isCollided(sturdyWaffleBoundingBox, stackableElBoundingBox)) {
+      collisions.push({
+        el: stackableEl,
+        boundingBox: stackableElBoundingBox
+      });
     }
   });
-  if (noCollision) {
-    cb();
-  } else {
-    alert("collision");
+  if (collisions.length < 1) {
+    return cb();
   }
+  if (isValidCollision(sturdyWaffleBoundingBox, collisions)) {
+    const swcEl = document.getElementById("sturdy-waffle-container");
+    swcEl.prepend(collisions[0].el);
+    return alert("valid collision");
+  }
+  alert("collision");
 }
 function animateStackable() {
   const sturdyWaffleEl = document.getElementById("sturdy-waffle");
